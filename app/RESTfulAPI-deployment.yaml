@@ -2,21 +2,21 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: RESTfulAPI
-  name: RESTfulAPI
-  namespace: RESTfulAPI
+    app: restfulapi
+  name: restfulapi
+  namespace: restfulapi
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: RESTfulAPI
+      app: restfulapi
   strategy: {}
   template:
     metadata:
       labels:
-        app: RESTfulAPI
+        app: restfulapi
     spec:
       containers:
-      - image: quay.io/redhatworkshops/bgd:latest
-        name: RESTfulAPI
+      - image: docker.io/polpinol98/restfulapiapp:latest
+        name: restfulapi
         resources: {}
