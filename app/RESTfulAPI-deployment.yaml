@@ -17,7 +17,7 @@ spec:
         app: restfulapi
     spec:
       containers:
-      - image: docker.io/polpinol98/restfulapiapp:1.0.21
+      - image: docker.io/polpinol98/restfulapiapp:1.0.22
         name: restfulapi
         imagePullPolicy: Always
         resources: {}
