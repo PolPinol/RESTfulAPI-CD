@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: RESTfulAPI
+  name: RESTfulAPI
+  namespace: RESTfulAPI
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: RESTfulAPI
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: RESTfulAPI
+    spec:
+      containers:
+      - image: quay.io/redhatworkshops/bgd:latest
+        name: RESTfulAPI
+        resources: {}

@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: RESTfulAPI
+spec:
+  rules:
+    - host: RESTfulAPI.devnation
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: RESTfulAPI
+                port:
+                  number: 8080
