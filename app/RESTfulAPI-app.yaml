@@ -1,11 +1,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: restfulapi-cd
+  name: restfulapi
   namespace: argocd
 spec:
   destination:
-    namespace: restfulapi-cd
+    namespace: restfulapi
     server: https://kubernetes.default.svc
   project: default
   source:
