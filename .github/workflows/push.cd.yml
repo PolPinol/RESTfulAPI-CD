@@ -1,0 +1,35 @@
+name: Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.GKE_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+
+    - name: Configure kubectl
+      run: |
+        gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_CLUSTER_ZONE }} --project ${{ secrets.GKE_PROJECT_ID }}
+
+    - name: Deploy to GKE
+      run: |
+        kubectl apply -f app/RESTfulAPI-namespace.yaml
+        kubectl apply -f app/RESTfulAPI-deployment.yaml
+        kubectl apply -f app/RESTfulAPI-svc.yaml
+
+    - name: Verify Deployment
+      run: |
+        kubectl rollout status deployment/restfulapi-cd -n restfulapi-cd
