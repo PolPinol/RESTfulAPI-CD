@@ -2,24 +2,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: restfulapi-test
-  name: restfulapi-test
-  namespace: restfulapi-test
-  annotations:
-    argoproj.io/sync-wave: "1"
+    app: restfulapi-cd
+  name: restfulapi-cd
+  namespace: restfulapi-cd
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: restfulapi-test
+      app: restfulapi-cd
   strategy: {}
   template:
     metadata:
       labels:
-        app: restfulapi-test
+        app: restfulapi-cd
     spec:
       containers:
-      - image: docker.io/polpinol98/restfulapiapp:1.0.23
-        name: restfulapi-test
+      - image: docker.io/polpinol98/restfulapiapp:1.0.25
+        name: restfulapi-cd
         imagePullPolicy: Always
         resources: {}

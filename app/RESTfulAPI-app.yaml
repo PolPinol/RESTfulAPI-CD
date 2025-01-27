@@ -1,11 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: restfulapi-test
+  name: restfulapi-cd
   namespace: argocd
+  annotations:
+    argoproj.io/sync-wave: "0"
 spec:
   destination:
-    namespace: restfulapi-test
+    namespace: restfulapi-cd
     server: https://kubernetes.default.svc 
   project: default 
   source: 
@@ -17,4 +19,4 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+    - CreateNamespace=true
