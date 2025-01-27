@@ -1,4 +1,4 @@
-apiVersion: argoproj.io/v1beta1  # Update if necessary
+apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: restfulapi-cd
