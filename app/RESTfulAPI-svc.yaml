@@ -1,17 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
+  name: restfulapi
+  namespace: restfulapi
   labels:
-    app: restfulapi-test
-  name: restfulapi-test
-  namespace: restfulapi-test
+    app: restfulapi
   annotations:
-    argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   type: LoadBalancer
   ports:
-  - port: 8080
-    protocol: TCP
-    targetPort: 8080
+    - port: 8080
+      protocol: TCP
+      targetPort: 8080
   selector:
-    app: restfulapi-test
+    app: restfulapi
