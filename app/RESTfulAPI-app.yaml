@@ -1,4 +1,4 @@
-apiVersion: argoproj.io/v1alpha1
+apiVersion: argoproj.io/v1beta1  # Update if necessary
 kind: Application
 metadata:
   name: restfulapi-cd
@@ -17,6 +17,6 @@ spec:
   syncPolicy: 
     automated:
       prune: true
-      selfHeal: false
+      selfHeal: true
     syncOptions:
     - CreateNamespace=true
