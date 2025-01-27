@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: restfulapi
-  namespace: restfulapi
+  name: restfulapi-cd
+  namespace: restfulapi-cd
   labels:
-    app: restfulapi
+    app: restfulapi-cd
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: restfulapi
+      app: restfulapi-cd
   template:
     metadata:
       labels:
-        app: restfulapi
+        app: restfulapi-cd
     spec:
       containers:
-        - name: restfulapi
+        - name: restfulapi-cd
           image: docker.io/polpinol98/restfulapiapp:1.0.25
           imagePullPolicy: Always
           ports:
