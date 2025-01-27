@@ -2,22 +2,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: restfulapi
-  name: restfulapi
-  namespace: restfulapi
+    app: restfulapi-cd
+  name: restfulapi-cd
+  namespace: restfulapi-cd
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: restfulapi
+      app: restfulapi-cd
   strategy: {}
   template:
     metadata:
       labels:
-        app: restfulapi
+        app: restfulapi-cd
     spec:
       containers:
       - image: docker.io/polpinol98/restfulapiapp:1.0.23
-        name: restfulapi
+        name: restfulapi-cd
         imagePullPolicy: Always
         resources: {}
