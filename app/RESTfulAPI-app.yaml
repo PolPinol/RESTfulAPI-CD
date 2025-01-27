@@ -3,18 +3,20 @@ kind: Application
 metadata:
   name: restfulapi-cd
   namespace: argocd
+  annotations:
+    argoproj.io/sync-wave: "0"
 spec:
   destination:
     namespace: restfulapi-cd
-    server: https://kubernetes.default.svc
-  project: default
-  source:
+    server: https://kubernetes.default.svc 
+  project: default 
+  source: 
     path: app
     repoURL: https://github.com/PolPinol/RESTfulAPI-CD
     targetRevision: main
-  syncPolicy:
+  syncPolicy: 
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+    - CreateNamespace=true
