@@ -1,6 +1,8 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: restfulapi
+  name: restfulapi-test
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argoproj.io/sync-wave: "0"
+spec: {}
+status: {}

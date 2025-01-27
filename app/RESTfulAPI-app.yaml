@@ -1,18 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: restfulapi
+  name: restfulapi-test
   namespace: argocd
 spec:
   destination:
-    namespace: restfulapi
-    server: https://kubernetes.default.svc
-  project: default
-  source:
+    namespace: restfulapi-test
+    server: https://kubernetes.default.svc 
+  project: default 
+  source: 
     path: app
     repoURL: https://github.com/PolPinol/RESTfulAPI-CD
     targetRevision: main
-  syncPolicy:
+  syncPolicy: 
     automated:
       prune: true
       selfHeal: true
