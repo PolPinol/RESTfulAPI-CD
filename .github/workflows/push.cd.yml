@@ -1,4 +1,4 @@
-name: Deploy to GKE
+name: E2E and Deploy to GKE
 
 on:
   push:
@@ -7,43 +7,55 @@ on:
 
 jobs:
   e2e-test:
+    name: E2E Tests
     runs-on: ubuntu-22.04
+
     outputs:
-      image_digest: ${{ steps.extract_digest.outputs.image_digest }}
+      image_tag: ${{ steps.extract_tag.outputs.image_tag }}
+      full_digest: ${{ steps.get_digest.outputs.full_digest }}
 
     steps:
-      - name: Check out code
+      - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Extract image TAG from Deployment file
-        id: parse_tag
+      - name: Extract Docker Tag from Deployment YAML
+        id: extract_tag
+        shell: bash
         run: |
-          IMAGE_TAG=$(grep 'image: ' app/RESTfulAPI-deployment.yaml | awk '{print $2}')
-          echo "Found image in deployment file: $IMAGE_TAG"
-          echo "::set-output name=image_tag::$IMAGE_TAG"
+          # Parse the <TAG> from a line like:  image: docker.io/polpinol98/restfulapiapp:1.0.25
+          IMAGE_TAG=$(grep 'image: docker.io/polpinol98/restfulapiapp:' app/RESTfulAPI-deployment.yaml \
+            | awk -F ':' '{print $3}')
 
-      - name: Pull and Inspect Image
-        id: extract_digest
-        run: |
-          docker pull ${{ steps.parse_tag.outputs.image_tag }}
-          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ steps.parse_tag.outputs.image_tag }})
-          echo "Digest is: $DIGEST"
-          echo "::set-output name=image_digest::$DIGEST"
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Run E2E Test with the Immutable Digest
+      - name: Pull Docker Image Once
+        shell: bash
         run: |
-          docker run -d --name restfulapi -p 8080:8080 ${{ steps.extract_digest.outputs.image_digest }}
-          sleep 5
-          curl -f http://localhost:8080/hello
-          echo "E2E test success!"
-          docker stop restfulapi
-          docker rm restfulapi
+          docker pull "docker.io/polpinol98/restfulapiapp:${{ steps.extract_tag.outputs.image_tag }}"
+
+      - name: Get Image Digest
+        id: get_digest
+        shell: bash
+        run: |
+          FULL_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' \
+            "docker.io/polpinol98/restfulapiapp:${{ steps.extract_tag.outputs.image_tag }}")
+
+          echo "full_digest=$FULL_DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Run E2E Tests (external script)
+        shell: bash
+        run: |
+          chmod +x e2e/helloWorld.sh
+
+          ./e2e/helloWorld.sh "docker.io/polpinol98/restfulapiapp:${{ steps.extract_tag.outputs.image_tag }}"
 
   deploy:
+    name: Deploy to GKE
     runs-on: ubuntu-22.04
     needs: e2e-test
+
     steps:
-      - name: Check out code
+      - name: Check out repository
         uses: actions/checkout@v3
 
       - name: Authenticate to Google Cloud
@@ -64,14 +76,22 @@ jobs:
           location: ${{ secrets.GKE_CLUSTER_ZONE }}
           project_id: ${{ secrets.GKE_PROJECT_ID }}
 
-      - name: Deploy Using Immutable Digest
+      - name: Pin the image digest in Deployment YAML
+        shell: bash
         run: |
-          sed -i "s|image: .*|image: ${{ needs.e2e-test.outputs.image_digest }}|" app/RESTfulAPI-deployment.yaml
-          
+          sed -i "s|image: docker.io/polpinol98/restfulapiapp:.*|image: ${{ needs.e2e-test.outputs.full_digest }}|" \
+            app/RESTfulAPI-deployment.yaml
+
+          echo "Deployment pinned to digest: ${{ needs.e2e-test.outputs.full_digest }}"
+
+      - name: Deploy to GKE
+        shell: bash
+        run: |
           kubectl apply -f app/RESTfulAPI-namespace.yaml
           kubectl apply -f app/RESTfulAPI-deployment.yaml
           kubectl apply -f app/RESTfulAPI-svc.yaml
 
       - name: Verify Deployment
+        shell: bash
         run: |
           kubectl rollout status deployment/restfulapi-cd -n restfulapi-cd
