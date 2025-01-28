@@ -6,59 +6,73 @@ on:
       - main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  e2e-test:
+    runs-on: ubuntu-22.04
+    outputs:
+      image_digest: ${{ steps.extract_digest.outputs.image_digest }}
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
+      - name: Check out code
+        uses: actions/checkout@v3
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Extract image TAG from Deployment file
+        id: parse_tag
+        run: |
+          IMAGE_TAG=$(grep 'image:' app/RESTfulAPI-deployment.yaml | awk '{print $2}')
+          echo "Found image in deployment file: $IMAGE_TAG"
+          echo "::set-output name=image_tag::$IMAGE_TAG"
 
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
-      with:
-        project_id: ${{ secrets.GKE_PROJECT_ID }}
-        install_components: 'kubectl'
+      - name: Pull and Inspect Image
+        id: extract_digest
+        run: |
+          docker pull ${{ steps.parse_tag.outputs.image_tag }}
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ steps.parse_tag.outputs.image_tag }})
+          echo "Digest is: $DIGEST"
+          echo "::set-output name=image_digest::$DIGEST"
 
-    - name: Get GKE Credentials
-      uses: google-github-actions/get-gke-credentials@v1
-      with:
-        cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
-        location: ${{ secrets.GKE_CLUSTER_ZONE }}
-        project_id: ${{ secrets.GKE_PROJECT_ID }}
+      - name: Run E2E Test with the Immutable Digest
+        run: |
+          docker run -d --name restfulapi -p 8080:8080 ${{ steps.extract_digest.outputs.image_digest }}
+          sleep 5
+          curl -f http://localhost:8080/hello
+          echo "E2E test success!"
+          docker stop restfulapi
+          docker rm restfulapi
 
-    - name: Deploy to GKE
-      run: |
-        kubectl apply -f app/RESTfulAPI-namespace.yaml
-        kubectl apply -f app/RESTfulAPI-deployment.yaml
-        kubectl apply -f app/RESTfulAPI-svc.yaml
+  deploy:
+    runs-on: ubuntu-22.04
+    needs: e2e-test
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
 
-    - name: Verify Deployment
-      run: |
-        kubectl rollout status deployment/restfulapi-cd -n restfulapi-cd
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-    - name: Get Service External IP
-      id: get_external_ip
-      run: |
-        echo "Waiting for the external IP to be assigned..."
-        # Wait until the external IP is assigned, with a timeout of 300 seconds (5 minutes)
-        for i in {1..30}; do
-          EXTERNAL_IP=$(kubectl get svc restfulapi-cd -n restfulapi-cd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-          if [ -n "$EXTERNAL_IP" ]; then
-            echo "Service External IP: $EXTERNAL_IP"
-            echo "::set-output name=external_ip::$EXTERNAL_IP"
-            exit 0
-          fi
-          echo "Attempt $i: External IP not assigned yet. Waiting for 10 seconds..."
-          sleep 10
-        done
-        echo "Failed to retrieve the external IP within the expected time."
-        exit 1
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GKE_PROJECT_ID }}
+          install_components: 'kubectl'
 
-    - name: Log External IP
-      run: |
-        echo "The deployed service is available at: http://$(steps.get_external_ip.outputs.external_ip):8080"
+      - name: Get GKE Credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_CLUSTER_ZONE }}
+          project_id: ${{ secrets.GKE_PROJECT_ID }}
+
+      - name: Deploy Using Immutable Digest
+        run: |
+          # Option A: patch the deployment file to reference the digest
+          sed -i "s|image: .*|image: ${{ needs.e2e-test.outputs.image_digest }}|" app/RESTfulAPI-deployment.yaml
+          
+          kubectl apply -f app/RESTfulAPI-namespace.yaml
+          kubectl apply -f app/RESTfulAPI-deployment.yaml
+          kubectl apply -f app/RESTfulAPI-svc.yaml
+
+      - name: Verify Deployment
+        run: |
+          kubectl rollout status deployment/restfulapi-cd -n restfulapi-cd
