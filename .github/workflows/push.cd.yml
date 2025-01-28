@@ -18,7 +18,7 @@ jobs:
       - name: Extract image TAG from Deployment file
         id: parse_tag
         run: |
-          IMAGE_TAG=$(grep 'image:' app/RESTfulAPI-deployment.yaml | awk '{print $2}')
+          IMAGE_TAG=$(grep 'image: ' app/RESTfulAPI-deployment.yaml | awk '{print $2}')
           echo "Found image in deployment file: $IMAGE_TAG"
           echo "::set-output name=image_tag::$IMAGE_TAG"
 
@@ -66,7 +66,6 @@ jobs:
 
       - name: Deploy Using Immutable Digest
         run: |
-          # Option A: patch the deployment file to reference the digest
           sed -i "s|image: .*|image: ${{ needs.e2e-test.outputs.image_digest }}|" app/RESTfulAPI-deployment.yaml
           
           kubectl apply -f app/RESTfulAPI-namespace.yaml
