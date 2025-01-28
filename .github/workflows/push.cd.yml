@@ -95,3 +95,27 @@ jobs:
         shell: bash
         run: |
           kubectl rollout status deployment/restfulapi-cd -n restfulapi-cd
+
+      - name: Get External IP
+        shell: bash
+        run: |
+          # We try multiple times since it can take a while for the LB to provision
+          EXTERNAL_IP=""
+          for i in {1..30}; do
+            EXTERNAL_IP=$(kubectl get svc restfulapi-cd -n restfulapi-cd --output jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            if [ -n "$EXTERNAL_IP" ]; then
+              break
+            fi
+            echo "Waiting for external IP..."
+            sleep 10
+          done
+
+          if [ -z "$EXTERNAL_IP" ]; then
+            echo "Timed out waiting for the external IP"
+            exit 1
+          fi
+
+          echo "---------------------------------------------------"
+          echo "Service external IP: $EXTERNAL_IP"
+          echo "You can reach the service at http://${EXTERNAL_IP}:8080"
+          echo "---------------------------------------------------"
