@@ -16,7 +16,7 @@ spec:
         app: restfulapi-cd
     spec:
       containers:
-      - image: docker.io/polpinol98/restfulapiapp:2.0.0
+      - image: docker.io/polpinol98/restfulapiapp:2.0.1
         name: restfulapi-cd
         imagePullPolicy: Always
         ports:
